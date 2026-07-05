@@ -86,11 +86,15 @@ export const state = {
   weatherStrength: 0.4,
   dayNightClock: 0,
 
-  // Dificuldade e classe
+  // Dificuldade, classe e mapa
   selectedDifficulty: 'survivor',
   selectedClass: 'assault',
+  selectedMap: 'forest',
   difficultyMod: DIFFICULTY_MODS.survivor,
   classMod: CLASS_MODS.assault,
+
+  // Escudo temporário (pickup) — feedback próprio no HUD além do invuln genérico
+  shieldTimer: 0,
 
   // Melhor pontuação
   bestRun: { kills: 0, wave: 0, level: 1 },
@@ -191,6 +195,7 @@ export function resetState() {
   state.weatherTimer = 18;
   state.weatherStrength = 0.4;
   state.dayNightClock = 0;
+  state.shieldTimer = 0;
   state.zombies.length = 0;
   state.bullets.length = 0;
   state.grenades.length = 0;

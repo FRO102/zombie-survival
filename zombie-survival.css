@@ -84,6 +84,50 @@
   }
   #topleft{ top:12px; left:12px; min-width:190px; }
   #topright{ top:12px; right:12px; text-align:right; min-width:150px; }
+  #buffs-panel{
+    top:12px;
+    left:214px;
+    min-width:150px;
+    max-width:210px;
+  }
+  #buffs-row{
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px;
+    margin-top:4px;
+  }
+  .buff-icon{
+    position:relative;
+    width:26px; height:26px;
+    display:flex; align-items:center; justify-content:center;
+    background:rgba(20,24,16,0.85);
+    border:1px solid var(--olive-lt);
+    border-radius:4px;
+    font-size:14px;
+    cursor:default;
+  }
+  .buff-icon.epic{ border-color:#c084fc; box-shadow:0 0 6px rgba(192,132,252,0.5); }
+  .buff-icon.rare{ border-color:#7ac8e6; }
+  .buff-icon.temp{ border-color:#ffd76b; animation: buffPulse 1s ease-in-out infinite; }
+  .buff-icon.warn{ border-color:var(--rust-lt); animation: buffPulse 0.6s ease-in-out infinite; }
+  @keyframes buffPulse{ 0%,100%{ opacity:1; } 50%{ opacity:0.55; } }
+  .buff-icon .buff-tooltip{
+    position:absolute;
+    top:32px; left:50%; transform:translateX(-50%);
+    background:rgba(8,9,6,0.96);
+    border:1px solid var(--olive-lt);
+    color:var(--bone);
+    font-size:10px;
+    letter-spacing:0.5px;
+    padding:5px 8px;
+    white-space:nowrap;
+    opacity:0;
+    pointer-events:none;
+    transition:opacity 0.12s ease;
+    z-index:40;
+    text-transform:none;
+  }
+  .buff-icon:hover .buff-tooltip{ opacity:1; }
   #ammo-panel{
     right:12px;
     top:172px;

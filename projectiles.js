@@ -10,14 +10,26 @@ import { killZombie } from './enemies.js';
 export let bullets = [];
 export let grenades = [];
 export let enemyProjectiles = [];
+export let shockwaves = [];
 
 export function addBullet(b) { bullets.push(b); }
 export function addGrenade(g) { grenades.push(g); }
+
+export function updateShockwaves(dt) {
+  for (let i = shockwaves.length - 1; i >= 0; i--) {
+    const s = shockwaves[i];
+    s.life -= dt;
+    s.radius += s.growSpeed * dt;
+    if (s.life <= 0) shockwaves.splice(i, 1);
+  }
+}
 
 export function explodeAt(x, y, radius, damage, sourceWeapon) {
   // Garantir que state.zombies é um array
   if (!state.zombies) state.zombies = [];
   if (sourceWeapon) state.lastDamageSource = sourceWeapon;
+
+  shockwaves.push({ x, y, radius: radius * 0.15, maxRadius: radius, growSpeed: radius * 5.5, life: 0.32, maxLife: 0.32 });
 
   spawnBloodSplat(x, y, 18);
   for (let i = 0; i < 26; i++) {

@@ -1,5 +1,5 @@
 import { initGame, resetGame, initGameState, loop, togglePause, applyGameSettings, choosePerk, refreshWeaponSlots, syncBestRunUI } from './game.js';
-import { loadCharacterLook, applyCharacterLook, drawCharacterPreview, initCharacter } from './character.js'; // <-- adicionado initCharacter
+import { loadCharacterLook, applyCharacterLook, applyCharacterLookFromInputs, drawCharacterPreview, initCharacter } from './character.js'; // <-- adicionado initCharacter
 import { initAudioIfNeeded, setAudioVolume, setAudioMuted, resumeAudio } from './audio.js';
 import { setupInput } from './input.js';
 import { initUI } from './ui.js';
@@ -7,6 +7,7 @@ import { initRenderer } from './render.js';
 import { buildGround, buildDebris, buildObstacles, initAmbient } from './world.js';
 import { state } from './state.js';
 import { renderAchievementsScreen } from './achievements.js';
+import { MAPS, MAP_STORAGE_KEY } from './constants.js';
 
 // ... resto do código igual
 // Inicializar elementos DOM e canvas
@@ -14,6 +15,15 @@ const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
 ctx.imageSmoothingEnabled = false;
 const W = canvas.width, H = canvas.height;
+
+// Carregar mapa selecionado ANTES de construir o mundo pela primeira vez,
+// para que a paleta/obstáculos corretos já sejam usados no primeiro build.
+(function loadInitialMap() {
+  try {
+    const raw = localStorage.getItem(MAP_STORAGE_KEY);
+    if (raw && MAPS[raw]) state.selectedMap = raw;
+  } catch (err) { /* ignore */ }
+})();
 
 // Construir mundo
 buildGround();
@@ -49,6 +59,8 @@ document.getElementById('retry-btn').addEventListener('click', () => {
   document.getElementById('death-screen').classList.add('hidden');
   resetGame();
 });
+document.getElementById('menu-from-death-btn').addEventListener('click', goToMainMenu);
+
 
 document.getElementById('perk-a').addEventListener('click', () => choosePerk(0));
 document.getElementById('perk-b').addEventListener('click', () => choosePerk(1));
@@ -71,25 +83,13 @@ document.getElementById('back-custom-btn').addEventListener('click', () => {
   document.getElementById('customize-screen').classList.add('hidden');
 });
 document.getElementById('apply-custom-btn').addEventListener('click', () => {
-  const outfit = document.getElementById('custom-outfit').value;
-  const skin = document.getElementById('custom-skin').value;
-  applyCharacterLook(outfit, skin, true);
+  applyCharacterLookFromInputs(true);
   document.getElementById('customize-screen').classList.add('hidden');
 });
-document.getElementById('custom-outfit').addEventListener('input', () => {
-  applyCharacterLook(
-    document.getElementById('custom-outfit').value,
-    document.getElementById('custom-skin').value,
-    false
-  );
-});
-document.getElementById('custom-skin').addEventListener('input', () => {
-  applyCharacterLook(
-    document.getElementById('custom-outfit').value,
-    document.getElementById('custom-skin').value,
-    false
-  );
-});
+for (const id of ['custom-outfit', 'custom-skin', 'custom-hat', 'custom-backpack', 'custom-mask']) {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('input', () => applyCharacterLookFromInputs(false));
+}
 
 document.getElementById('achievements-btn').addEventListener('click', () => {
   renderAchievementsScreen();
@@ -139,6 +139,36 @@ document.getElementById('menu-btn').addEventListener('click', goToMainMenu);
 // Dificuldade e classe
 document.getElementById('difficulty-select').addEventListener('change', applyGameSettings);
 document.getElementById('class-select').addEventListener('change', applyGameSettings);
+
+// Mapa — sincronizar o <select> com o que já foi carregado no arranque
+function syncMapDescription() {
+  const mapSelect = document.getElementById('map-select');
+  const label = document.getElementById('map-desc-label');
+  if (!mapSelect || !label) return;
+  if (mapSelect.value === 'random') {
+    label.textContent = '🎲 A random map will be chosen when you start a run.';
+  } else {
+    const map = MAPS[mapSelect.value] || MAPS.forest;
+    label.textContent = map.desc;
+  }
+}
+const mapSelectEl = document.getElementById('map-select');
+if (mapSelectEl) {
+  mapSelectEl.value = state.selectedMap;
+  syncMapDescription();
+  mapSelectEl.addEventListener('change', () => {
+    const value = mapSelectEl.value;
+    state.selectedMap = value;
+    try { localStorage.setItem(MAP_STORAGE_KEY, value); } catch (err) { /* ignore */ }
+    syncMapDescription();
+    // Se for 'random', não reconstruímos já; o sorteio acontece no início da run
+    if (value !== 'random') {
+      buildGround();
+      buildDebris();
+      buildObstacles();
+    }
+  });
+}
 
 // Carregar preferências
 applyGameSettings();

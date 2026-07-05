@@ -1,13 +1,13 @@
-import { WEAPONS, PERKS, PERK_RARITY_WEIGHTS, RARITY_COLOR, WORLD_W, WORLD_H, STORAGE_KEY, DIFFICULTY_MODS, CLASS_MODS } from './constants.js';
+import { MAPS, WEAPONS, PERKS, PERK_RARITY_WEIGHTS, RARITY_COLOR, WORLD_W, WORLD_H, STORAGE_KEY, DIFFICULTY_MODS, CLASS_MODS } from './constants.js';
 import { clamp, rand, randInt } from './utils.js';
 import { initAudioIfNeeded, playSound, resumeAudio } from './audio.js';
 import { keys, mouseDown, touchFiring, rightMouseDown, joystickVec, mouseX, mouseY } from './input.js';
 import { state, isWeaponUnlocked, resetState } from './state.js';
 import { resetPlayerState, shoot, reload, switchWeapon, cycleWeapon, tryUseMedkit, tryDash, meleeAttack, gainXP, applyIncomingDamage } from './player.js';
 import { waveComposition, spawnZombie, killZombie, updateZombies, resetEnemies, pickBossVariant } from './enemies.js';
-import { updateBullets, updateGrenades, updateEnemyProjectiles } from './projectiles.js';
-import { updatePickups, updateParticles, spawnFloatText, spawnBloodSplat } from './pickups.js';
-import { updateWeather, updateAmbient, obstacles } from './world.js';
+import { updateBullets, updateGrenades, updateEnemyProjectiles, updateShockwaves } from './projectiles.js';
+import { updatePickups, updateParticles, spawnFloatText, spawnBloodSplat, addParticle } from './pickups.js';
+import { updateWeather, updateAmbient, obstacles,  buildGround, buildDebris, buildObstacles  } from './world.js';
 import { render, setCamera, setShake, initRenderer } from './render.js';
 import { dom, syncHUD, updateDamageIndicators, decayCombo, triggerDamageIndicator, damageIndicators, initUI, refreshWeaponSlotsUI } from './ui.js';
 import { playerLook, applyCharacterLook, drawCharacterPreview, initCharacter, loadCharacterLook, saveCharacterLook } from './character.js';
@@ -15,6 +15,7 @@ import { loadAchievements, loadLifetimeStats, saveLifetimeStats, checkAchievemen
 
 let canvas, ctx, W, H;
 let hpBeforeWave = 100; // usado para o achievement "Untouched"
+let footstepTimer = 0; // acumulador local para poeira de passos (não precisa persistir entre runs)
 
 // ---- Funções de persistência ----
 export function saveBestRun() {
@@ -180,6 +181,18 @@ export function updatePlayer(dt) {
     }
     if (!blockedX) state.player.x = nx;
     if (!blockedY) state.player.y = ny;
+
+    // Poeira de passos — ritmo mais rápido a sprintar
+    footstepTimer -= dt;
+    if (footstepTimer <= 0) {
+      footstepTimer = sprinting ? 0.16 : 0.26;
+      addParticle({
+        x: state.player.x - Math.cos(state.player.angle) * 6 + rand(-3, 3),
+        y: state.player.y - Math.sin(state.player.angle) * 6 + rand(-3, 3) + state.player.r * 0.6,
+        vx: rand(-8, 8), vy: rand(-4, 2),
+        life: 0.35, maxLife: 0.35, color: 'rgba(180,175,150,0.35)', size: rand(3, 5)
+      });
+    }
   }
 
   if (sprinting && state.dashDuration <= 0 && !state.player.freeSprint) {
@@ -193,6 +206,7 @@ export function updatePlayer(dt) {
   state.player.angle = Math.atan2(worldMouseY - state.player.y, worldMouseX - state.player.x);
 
   if (state.player.invuln > 0) state.player.invuln -= dt;
+  if (state.shieldTimer > 0) state.shieldTimer -= dt;
   if (state.player.meleeCd > 0) state.player.meleeCd -= dt;
 
   if (state.fireTimer > 0) state.fireTimer -= dt;
@@ -262,6 +276,21 @@ export function resetGame() {
 }
 
 export function initGameState(tutorial) {
+      // Se o mapa selecionado for 'random', sortear um mapa real
+  if (state.selectedMap === 'random') {
+    const keys = Object.keys(MAPS);
+    const randomKey = keys[Math.floor(Math.random() * keys.length)];
+    state.selectedMap = randomKey;
+    // Reconstruir o mundo com o mapa sorteado
+    buildGround();
+    buildDebris();
+    buildObstacles();
+    // Atualizar o select para mostrar o mapa sorteado (opcional)
+    const mapSelect = document.getElementById('map-select');
+    if (mapSelect) mapSelect.value = randomKey;
+  }
+
+
   state.tutorialMode = !!tutorial;
   applyGameSettings();
   resetPlayerState(state.classMod);
@@ -297,6 +326,8 @@ export function initGameState(tutorial) {
   state.weatherTimer = rand(14, 26);
   state.weatherStrength = rand(0.35, 0.7);
   state.screenShake = 0;
+
+
   const controlsHint = document.getElementById('controls-hint');
   if (controlsHint) {
     controlsHint.style.display = 'block';
@@ -389,7 +420,7 @@ export function choosePerk(idx) {
   state.player.xp -= state.player.nextXp;
   state.player.nextXp = Math.round(state.player.nextXp * 1.35 + 8);
   state.perkPending = false;
-  state.runPerksTaken.push(choice.name);
+  state.runPerksTaken.push(choice.id || choice.name);
   state.lifetimeStats.perksTaken[choice.name] = (state.lifetimeStats.perksTaken[choice.name] || 0) + 1;
   saveLifetimeStats();
   checkAchievements({ type:'perk', rarity: choice.rarity });
@@ -428,6 +459,7 @@ export function loop(ts) {
     updateBullets(dt);
     updateGrenades(dt);
     updateEnemyProjectiles(dt);
+    updateShockwaves(dt);
     updateAmbient(dt);
     updateParticles(dt);
     updatePickups(dt);

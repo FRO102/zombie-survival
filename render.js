@@ -1,7 +1,7 @@
-import { PAL, WORLD_W, WORLD_H, TILE } from './constants.js';
+import { PAL, WORLD_W, WORLD_H, TILE, HAT_PRESETS, BACKPACK_PRESETS, MASK_PRESETS } from './constants.js';
 import { state } from './state.js';
-import { bullets, grenades, enemyProjectiles } from './projectiles.js';
-import { groundTiles, debris, obstacles, ambientParticles } from './world.js';
+import { bullets, grenades, enemyProjectiles, shockwaves } from './projectiles.js';
+import { groundTiles, debris, obstacles, ambientParticles, currentMap } from './world.js';
 import { pickups, particles, floatTexts, bloodPools } from './pickups.js';
 import { playerLook } from './character.js';
 import { rand, clamp } from './utils.js';
@@ -23,7 +23,8 @@ export function setShake(shake) { screenShake = shake; }
 function worldToScreen(x, y) { return { x: x - camX, y: y - camY }; }
 
 export function drawGround() {
-  ctx.fillStyle = PAL.ground1;
+  const map = currentMap();
+  ctx.fillStyle = map.ground.g1;
   ctx.fillRect(0, 0, W, H);
   const startX = Math.floor(camX / TILE) * TILE;
   const startY = Math.floor(camY / TILE) * TILE;
@@ -31,9 +32,9 @@ export function drawGround() {
     for (let x = startX; x < camX + W + TILE; x += TILE) {
       const h = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453;
       const f = h - Math.floor(h);
-      let c = PAL.ground1;
-      if (f < 0.15) c = PAL.ground2;
-      else if (f < 0.25) c = PAL.ground3;
+      let c = map.ground.g1;
+      if (f < 0.15) c = map.ground.g2;
+      else if (f < 0.25) c = map.ground.g3;
       ctx.fillStyle = c;
       const sx = x - camX, sy = y - camY;
       ctx.fillRect(sx, sy, TILE, TILE);
@@ -96,6 +97,25 @@ export function drawObstacles() {
       ctx.lineTo(s.x + o.w / 2, s.y + o.h / 2);
       ctx.moveTo(s.x + o.w / 2, s.y - o.h / 2);
       ctx.lineTo(s.x - o.w / 2, s.y + o.h / 2);
+      ctx.stroke();
+    } else if (o.type === 'grave') {
+      // Lápide: base retangular com topo arredondado
+      ctx.fillStyle = '#5a5a52';
+      ctx.beginPath();
+      ctx.moveTo(s.x - o.w / 2, s.y + o.h / 2);
+      ctx.lineTo(s.x - o.w / 2, s.y - o.h * 0.15);
+      ctx.quadraticCurveTo(s.x - o.w / 2, s.y - o.h / 2, s.x, s.y - o.h / 2);
+      ctx.quadraticCurveTo(s.x + o.w / 2, s.y - o.h / 2, s.x + o.w / 2, s.y - o.h * 0.15);
+      ctx.lineTo(s.x + o.w / 2, s.y + o.h / 2);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = '#3a3a34';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+      ctx.beginPath();
+      ctx.moveTo(s.x, s.y - o.h * 0.25);
+      ctx.lineTo(s.x, s.y + o.h * 0.3);
       ctx.stroke();
     } else {
       ctx.fillStyle = PAL.crateMetal;
@@ -239,6 +259,13 @@ export function drawPlayer() {
   ctx.beginPath(); ctx.ellipse(0, state.player.r * 0.7, state.player.r * 0.9, state.player.r * 0.4, 0, 0, Math.PI * 2); ctx.fill();
   const flicker = state.player.invuln > 0 && Math.floor(performance.now() / 60) % 2 === 0;
   ctx.rotate(state.player.angle);
+
+  // Mochila — desenhada atrás do corpo, do lado oposto à direção do olhar
+  if (playerLook.backpack && playerLook.backpack !== 'none') {
+    ctx.fillStyle = (BACKPACK_PRESETS[playerLook.backpack] || {}).color || '#4a3a26';
+    ctx.fillRect(-state.player.r * 0.9, -state.player.r * 0.55, state.player.r * 0.55, state.player.r * 1.1);
+  }
+
   ctx.fillStyle = '#2a2a24';
   ctx.fillRect(state.player.r - 2, -3, 18, 6);
   ctx.fillStyle = flicker ? '#ff8080' : playerLook.body;
@@ -253,7 +280,34 @@ export function drawPlayer() {
   ctx.beginPath();
   ctx.arc(state.player.r * 0.3, 0, state.player.r * 0.55, 0, Math.PI * 2);
   ctx.fill();
+
+  // Máscara — sobre a cara, virada para a direção do olhar
+  if (playerLook.mask && playerLook.mask !== 'none') {
+    ctx.fillStyle = (MASK_PRESETS[playerLook.mask] || {}).color || '#1a1a1a';
+    ctx.fillRect(state.player.r * 0.15, -state.player.r * 0.3, state.player.r * 0.55, state.player.r * 0.6);
+  }
+
+  // Chapéu — sobre a cabeça
+  if (playerLook.hat && playerLook.hat !== 'none') {
+    ctx.fillStyle = (HAT_PRESETS[playerLook.hat] || {}).color || '#3a4a26';
+    ctx.beginPath();
+    ctx.arc(state.player.r * 0.3, 0, state.player.r * 0.6, Math.PI * 1.15, Math.PI * 1.85);
+    ctx.fill();
+  }
+
   ctx.restore();
+
+  // Escudo temporário (pickup) — anel roxo pulsante mais notório que o invuln genérico
+  if (state.shieldTimer > 0) {
+    ctx.save();
+    ctx.globalAlpha = 0.5 + 0.3 * Math.sin(performance.now() / 120);
+    ctx.strokeStyle = '#c084fc';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, state.player.r + 8, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  }
 
   // Halo sutil quando "Undying" está pronto (feedback de perk épico)
   if (state.player.hasUndying && state.player.undyingReady) {
@@ -269,9 +323,23 @@ export function drawPlayer() {
 }
 
 export function drawBullets() {
-  ctx.fillStyle = PAL.bullet;
   for (const b of bullets) {
     const s = worldToScreen(b.x, b.y);
+    // Trilho: pequena linha na direção oposta à velocidade
+    const speed = Math.hypot(b.vx, b.vy) || 1;
+    const trailLen = clamp(speed * 0.014, 4, 16);
+    const tx = s.x - (b.vx / speed) * trailLen;
+    const ty = s.y - (b.vy / speed) * trailLen;
+    const grad = ctx.createLinearGradient(s.x, s.y, tx, ty);
+    grad.addColorStop(0, 'rgba(255,232,163,0.9)');
+    grad.addColorStop(1, 'rgba(255,232,163,0)');
+    ctx.strokeStyle = grad;
+    ctx.lineWidth = 2.2;
+    ctx.beginPath();
+    ctx.moveTo(s.x, s.y);
+    ctx.lineTo(tx, ty);
+    ctx.stroke();
+    ctx.fillStyle = PAL.bullet;
     ctx.beginPath();
     ctx.arc(s.x, s.y, 2.4, 0, Math.PI * 2);
     ctx.fill();
@@ -319,10 +387,11 @@ export function drawAmbient() {
 }
 
 export function drawDayNightTint() {
+  const map = currentMap();
   const phase = (state.dayNightClock % 80) / 80;
   const night = 0.5 + 0.5 * Math.sin((phase * Math.PI * 2) - Math.PI / 2);
   const weatherBoost = state.weatherType === 'fog' ? 0.08 : state.weatherType === 'rain' ? 0.03 : state.weatherType === 'storm' ? 0.14 : 0;
-  const a = 0.12 + night * 0.26 + weatherBoost * state.weatherStrength;
+  const a = 0.12 + night * 0.26 + weatherBoost * state.weatherStrength + (map.fogBase || 0);
   ctx.fillStyle = `rgba(18,28,46,${a.toFixed(3)})`;
   ctx.fillRect(0, 0, W, H);
 }
@@ -361,6 +430,25 @@ export function drawWeatherFx(t) {
   }
 }
 
+export function drawShockwaves() {
+  for (const s of shockwaves) {
+    const p = worldToScreen(s.x, s.y);
+    const alpha = clamp(s.life / s.maxLife, 0, 1);
+    ctx.save();
+    ctx.strokeStyle = `rgba(255,178,71,${(alpha * 0.7).toFixed(3)})`;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, s.radius, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.strokeStyle = `rgba(255,255,255,${(alpha * 0.35).toFixed(3)})`;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, s.radius * 0.7, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  }
+}
+
 export function drawParticles() {
   for (const p of particles) {
     const s = worldToScreen(p.x, p.y);
@@ -396,6 +484,25 @@ export function drawMeleeArc() {
   ctx.restore();
 }
 
+export function drawLaser() {
+  if (!state.player.alive) return;
+  const s = worldToScreen(state.player.x, state.player.y);
+  const len = 600;
+  const startX = s.x + Math.cos(state.player.angle) * 16;
+  const startY = s.y + Math.sin(state.player.angle) * 16;
+  const endX = s.x + Math.cos(state.player.angle) * len;
+  const endY = s.y + Math.sin(state.player.angle) * len;
+  ctx.save();
+  ctx.strokeStyle = 'rgba(255,60,60,0.5)';
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([5, 7]);
+  ctx.beginPath();
+  ctx.moveTo(startX, startY);
+  ctx.lineTo(endX, endY);
+  ctx.stroke();
+  ctx.restore();
+}
+
 export function drawDarknessVignette() {
   const grad = ctx.createRadialGradient(W / 2, H / 2, 80, W / 2, H / 2, W * 0.62);
   grad.addColorStop(0, 'rgba(0,0,0,0)');
@@ -405,7 +512,8 @@ export function drawDarknessVignette() {
 }
 
 export function drawWorldBounds() {
-  ctx.fillStyle = '#050603';
+  const map = currentMap();
+  ctx.fillStyle = map.bounds;
   const s0 = worldToScreen(0, 0);
   const s1 = worldToScreen(WORLD_W, WORLD_H);
   ctx.fillRect(s0.x - 40, s0.y - 40, WORLD_W + 80, 40);
@@ -481,7 +589,9 @@ export function render(t) {
   drawBullets();
   drawGrenades();
   drawEnemyProjectiles();
+  drawShockwaves();
   drawMeleeArc();
+  drawLaser();
   drawParticles();
   drawFloatTexts();
   drawWeatherFx(t);

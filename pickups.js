@@ -3,7 +3,7 @@ import { state } from './state.js';
 import { playSound } from './audio.js';
 import { WEAPONS } from './constants.js';
 
-export let pickups = [];
+export const pickups = state.pickups;
 export let particles = [];
 export let floatTexts = [];
 export let bloodPools = [];
@@ -90,7 +90,8 @@ export function updatePickups(dt) {
         state.medkits += 1;
         spawnFloatText(p.x, p.y - 10, '+MEDKIT', '#d8cfa8');
       } else if (p.type === 'shield') {
-        state.player.invuln = Math.max(state.player.invuln, 1.6);
+        state.shieldTimer = Math.max(state.shieldTimer, 4.0);
+        state.player.invuln = Math.max(state.player.invuln, 4.0);
         spawnFloatText(p.x, p.y - 10, 'SHIELDED!', '#c084fc');
       }
       playSound(640, 0.05, 'triangle', 0.03);

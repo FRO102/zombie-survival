@@ -36,17 +36,17 @@ export const WEAPONS = [
 export const PERKS = [
   // COMUNS
   {
-    name: 'Sharpened Ammo', rarity:'common',
+    id: 'sharpened_ammo', name: 'Sharpened Ammo', rarity:'common', icon:'🗡️',
     desc: '+15% ranged damage',
     apply: (player) => { player.dmgMul *= 1.15; }
   },
   {
-    name: 'Runner Legs', rarity:'common',
+    id: 'runner_legs', name: 'Runner Legs', rarity:'common', icon:'👟',
     desc: '+12 move speed, +16 sprint speed',
     apply: (player) => { player.speed += 12; player.sprintSpeed += 16; }
   },
   {
-    name: 'Thick Skin', rarity:'common',
+    id: 'thick_skin', name: 'Thick Skin', rarity:'common', icon:'❤️',
     desc: '+20 max HP and heal 20',
     apply: (player) => {
       player.maxHp += 20;
@@ -54,7 +54,7 @@ export const PERKS = [
     }
   },
   {
-    name: 'Deep Breath', rarity:'common',
+    id: 'deep_breath', name: 'Deep Breath', rarity:'common', icon:'💨',
     desc: '+20 max stamina and refill',
     apply: (player) => {
       player.maxStamina += 20;
@@ -62,7 +62,7 @@ export const PERKS = [
     }
   },
   {
-    name: 'Combat Plating', rarity:'common',
+    id: 'combat_plating', name: 'Combat Plating', rarity:'common', icon:'🛡️',
     desc: '+35 max armor and refill armor',
     apply: (player) => {
       player.maxArmor += 35;
@@ -70,7 +70,7 @@ export const PERKS = [
     }
   },
   {
-    name: 'Scavenger', rarity:'common',
+    id: 'scavenger', name: 'Scavenger', rarity:'common', icon:'🧲',
     desc: '+30% pickup radius and +1 medkit',
     apply: (player, medkits) => {
       player.pickupRadius *= 1.3;
@@ -78,54 +78,54 @@ export const PERKS = [
     }
   },
   {
-    name: 'Quick Hands', rarity:'common',
+    id: 'quick_hands', name: 'Quick Hands', rarity:'common', icon:'⏱️',
     desc: '-20% reload time',
     apply: (player) => { player.reloadMul = (player.reloadMul || 1) * 0.8; }
   },
   {
-    name: 'Steady Grip', rarity:'common',
+    id: 'steady_grip', name: 'Steady Grip', rarity:'common', icon:'🎯',
     desc: '-25% weapon spread',
     apply: (player) => { player.spreadMul = (player.spreadMul || 1) * 0.75; }
   },
   // RAROS
   {
-    name: 'Adrenaline', rarity:'rare',
+    id: 'adrenaline', name: 'Adrenaline', rarity:'rare', icon:'⚡',
     desc: 'Sprint no longer drains stamina',
     apply: (player) => { player.freeSprint = true; }
   },
   {
-    name: 'Bloodlust', rarity:'rare',
+    id: 'bloodlust', name: 'Bloodlust', rarity:'rare', icon:'🩸',
     desc: 'Killing an enemy heals 2 HP',
     apply: (player) => { player.lifesteal = (player.lifesteal || 0) + 2; }
   },
   {
-    name: 'Second Wind', rarity:'rare',
+    id: 'second_wind', name: 'Second Wind', rarity:'rare', icon:'🌀',
     desc: '-35% dash cooldown',
     apply: (player) => { player.dashCdBonusMul = (player.dashCdBonusMul || 1) * 0.65; }
   },
   {
-    name: 'Iron Will', rarity:'rare',
+    id: 'iron_will', name: 'Iron Will', rarity:'rare', icon:'🔩',
     desc: 'Armor absorbs 85% of damage instead of 65%',
     apply: (player) => { player.armorAbsorb = 0.85; }
   },
   {
-    name: 'Executioner', rarity:'rare',
+    id: 'executioner', name: 'Executioner', rarity:'rare', icon:'☠️',
     desc: '+50% critical hit damage',
     apply: (player) => { player.critMulBonus = (player.critMulBonus || 0) + 0.5; }
   },
   {
-    name: 'Field Medic', rarity:'rare',
+    id: 'field_medic', name: 'Field Medic', rarity:'rare', icon:'⛑️',
     desc: 'Medkits and health pickups heal 60% more',
     apply: (player) => { player.medkitBonus = (player.medkitBonus || 0) + 0.6; }
   },
   // ÉPICOS
   {
-    name: 'Undying', rarity:'epic',
+    id: 'undying', name: 'Undying', rarity:'epic', icon:'💜',
     desc: 'Once per night, surviving a lethal hit leaves you at 1 HP',
     apply: (player) => { player.hasUndying = true; }
   },
   {
-    name: 'Berserker', rarity:'epic',
+    id: 'berserker', name: 'Berserker', rarity:'epic', icon:'🔥',
     desc: 'Below 30% HP: +35% damage and +20% move speed',
     apply: (player) => { player.hasBerserker = true; }
   }
@@ -180,7 +180,11 @@ export const OUTFIT_PRESETS = {
   blood:   { body:'#6b2b2b', bodyDk:'#4b1d1d' },
   navy:    { body:'#2b3f57', bodyDk:'#1e2d40' },
   desert:  { body:'#8a7a4a', bodyDk:'#6b5e38' },
-  shadow:  { body:'#2a2a2e', bodyDk:'#18181c' }
+  shadow:  { body:'#2a2a2e', bodyDk:'#18181c' },
+  crimson: { body:'#7a2020', bodyDk:'#571414' },
+  arctic:  { body:'#c9d6de', bodyDk:'#9aabb5' },
+  toxic:   { body:'#5a7a2a', bodyDk:'#3e561c' },
+  royal:   { body:'#3a2a5a', bodyDk:'#251a3d' }
 };
 
 export const SKIN_PRESETS = {
@@ -190,11 +194,76 @@ export const SKIN_PRESETS = {
   pale: '#e0c9ab'
 };
 
+// ---------------------------------------------------------------------------
+// ACESSÓRIOS — puramente cosméticos, desenhados sobre o boneco do jogador
+// (ver character.js / render.js). 'none' está sempre disponível.
+// ---------------------------------------------------------------------------
+export const HAT_PRESETS = {
+  none:    { label:'NONE' },
+  cap:     { label:'CAP',      color:'#3a4a26' },
+  beanie:  { label:'BEANIE',   color:'#5c2020' },
+  helmet:  { label:'HELMET',   color:'#5a5a5a' },
+  bandana: { label:'BANDANA',  color:'#7a1c1c' }
+};
+
+export const BACKPACK_PRESETS = {
+  none:    { label:'NONE' },
+  scout:   { label:'SCOUT PACK',   color:'#4a3a26' },
+  medic:   { label:'MEDIC PACK',   color:'#8a2020' },
+  tactical:{ label:'TACTICAL RIG', color:'#2a2a2a' }
+};
+
+export const MASK_PRESETS = {
+  none:    { label:'NONE' },
+  bandit:  { label:'BANDIT',   color:'#1a1a1a' },
+  gasmask: { label:'GAS MASK', color:'#4a5a3a' },
+  skull:   { label:'SKULL',    color:'#d8cfa8' }
+};
+
+// ---------------------------------------------------------------------------
+// MAPAS — temas jogáveis à escolha no menu. Cada um define a paleta do chão,
+// a cor de fundo dos limites do mundo, o tipo/mistura de debris e obstáculos,
+// e um leve tom de overlay para reforçar a identidade visual.
+// ---------------------------------------------------------------------------
+export const MAPS = {
+  forest: {
+    label: 'ROTTEN FOREST',
+    desc: 'The original woods — overgrown and familiar.',
+    ground: { g1:'#232819', g2:'#1c2015', g3:'#2a3020' },
+    bounds: '#050603',
+    debrisMix: { rock:0.5, bush:0.5 },
+    obstacleMix: { crate:0.5, barrel:0.5 },
+    tint: 'rgba(18,28,46,1)',
+    fogBase: 0
+  },
+  city: {
+    label: 'DEAD CITY BLOCKS',
+    desc: 'Concrete, rubble and the husks of cars.',
+    ground: { g1:'#22242a', g2:'#1a1c21', g3:'#2b2e35' },
+    bounds: '#08090c',
+    debrisMix: { rock:0.85, bush:0.15 },
+    obstacleMix: { crate:0.35, barrel:0.65 },
+    tint: 'rgba(28,26,38,1)',
+    fogBase: 0.03
+  },
+  graveyard: {
+    label: 'OLD GRAVEYARD',
+    desc: 'Fog clings to the headstones at night.',
+    ground: { g1:'#1e2420', g2:'#171c19', g3:'#242c27' },
+    bounds: '#040605',
+    debrisMix: { rock:0.7, bush:0.3 },
+    obstacleMix: { crate:0.2, barrel:0.3, grave:0.5 },
+    tint: 'rgba(20,34,30,1)',
+    fogBase: 0.06
+  }
+};
+
 export const STORAGE_KEY = 'nightnine-best-run-v1';
 export const CUSTOM_STORAGE_KEY = 'nightnine-character-v1';
 export const SETTINGS_STORAGE_KEY = 'nightnine-settings-v1';
 export const ACHIEVEMENTS_STORAGE_KEY = 'nightnine-achievements-v1';
 export const STATS_STORAGE_KEY = 'nightnine-lifetime-stats-v1';
+export const MAP_STORAGE_KEY = 'nightnine-selected-map-v1';
 
 export const WORLD_W = 1800;
 export const WORLD_H = 1200;

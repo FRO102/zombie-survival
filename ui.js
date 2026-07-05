@@ -2,6 +2,7 @@ import { WEAPONS } from './constants.js';
 import { clamp } from './utils.js';
 import { state } from './state.js';
 import { isWeaponUnlocked } from './state.js';
+import { initBuffsUI, renderBuffsHUD } from './buffs.js';
 
 // Referências DOM
 export const dom = {};
@@ -39,6 +40,7 @@ export function initUI() {
   dom.spinupInner = document.getElementById('spinup-inner');
 
   buildWeaponSlots();
+  initBuffsUI();
 }
 
 function keyLabelForIndex(i) {
@@ -179,6 +181,7 @@ export function syncHUD(gameStartTime) {
   syncAmmoUI();
   dom.waveNum.textContent = state.wave;
   dom.killCount.textContent = state.killCount;
+  renderBuffsHUD();
 }
 
 export function decayCombo(dt) {

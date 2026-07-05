@@ -58,6 +58,10 @@
         <div id="xpbar-outer"><div id="xpbar-inner"></div></div>
       </div>
     </div>
+    <div class="hud-panel" id="buffs-panel">
+      <div class="label">Active Effects</div>
+      <div id="buffs-row"></div>
+    </div>
 <div class="hud-panel" id="ammo-panel">
   <div class="label">Ammo <span style="opacity:0.6;">(active weapon)</span></div>
   <div id="ammo-active-row">
@@ -117,7 +121,17 @@
           <option value="heavy">HEAVY (+ARMOR, +AMMO, -SPEED)</option>
         </select>
       </div>
+      <div class="setting-row">
+        <span class="setting-label">MAP</span>
+        <select id="map-select">
+          <option value="random">🎲 RANDOM</option>
+          <option value="forest" selected>ROTTEN FOREST</option>
+          <option value="city">DEAD CITY BLOCKS</option>
+          <option value="graveyard">OLD GRAVEYARD</option>
+        </select>
+      </div>
     </div>
+    <div class="tagline" id="map-desc-label">The original woods — overgrown and familiar.</div>
     <div class="tagline" id="best-run">BEST: 0 KILLS | NIGHT 0 | LV 1</div>
     <div class="tagline" id="lifetime-stats">TOTAL: 0 KILLS | 0 RUNS | 0 ACHIEVEMENTS</div>
     <div class="menu-actions">
@@ -161,6 +175,10 @@
           <option value="navy">NIGHT NAVY</option>
           <option value="desert">DESERT TAN</option>
           <option value="shadow">SHADOW BLACK</option>
+          <option value="crimson">CRIMSON</option>
+          <option value="arctic">ARCTIC</option>
+          <option value="toxic">TOXIC</option>
+          <option value="royal">ROYAL PURPLE</option>
         </select>
       </div>
       <div class="setting-row">
@@ -170,6 +188,34 @@
           <option value="tan">TAN</option>
           <option value="deep">DEEP</option>
           <option value="pale">PALE</option>
+        </select>
+      </div>
+      <div class="setting-row">
+        <span class="setting-label">HAT</span>
+        <select id="custom-hat">
+          <option value="none">NONE</option>
+          <option value="cap">CAP</option>
+          <option value="beanie">BEANIE</option>
+          <option value="helmet">HELMET</option>
+          <option value="bandana">BANDANA</option>
+        </select>
+      </div>
+      <div class="setting-row">
+        <span class="setting-label">BACKPACK</span>
+        <select id="custom-backpack">
+          <option value="none">NONE</option>
+          <option value="scout">SCOUT PACK</option>
+          <option value="medic">MEDIC PACK</option>
+          <option value="tactical">TACTICAL RIG</option>
+        </select>
+      </div>
+      <div class="setting-row">
+        <span class="setting-label">MASK</span>
+        <select id="custom-mask">
+          <option value="none">NONE</option>
+          <option value="bandit">BANDIT</option>
+          <option value="gasmask">GAS MASK</option>
+          <option value="skull">SKULL</option>
         </select>
       </div>
       <canvas id="custom-preview" width="120" height="120"></canvas>
@@ -203,7 +249,10 @@
       <div>BEST RUN: <span class="num" id="stat-best">0 KILLS | NIGHT 0 | LV 1</span></div>
     </div>
     <div id="death-new-achievements"></div>
-    <button class="btn" id="retry-btn">↺ RISE AGAIN</button>
+    <div class="menu-actions" style="display:flex; gap:12px; margin-top:8px;">
+      <button class="btn" id="retry-btn">↺ RISE AGAIN</button>
+      <button class="btn" id="menu-from-death-btn">🏠 MENU</button>
+    </div>
   </div>
 
   <!-- PAUSE / SETTINGS -->
